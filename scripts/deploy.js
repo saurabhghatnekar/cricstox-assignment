@@ -1,15 +1,27 @@
 const hre = require("hardhat");
+const {ethers} = require("hardhat");
 
 async function main() {
     const [deployer] = await hre.ethers.getSigners();
 
-    const SampleContract = await hre.ethers.getContractFactory("SampleContract");
-    const sampleContract = await SampleContract.deploy();
+    const FixedMath = await ethers.getContractFactory("FixedMath");
+    const FixedMathInstance = await FixedMath.deploy();
+    console.log("FixedMath deployed to", FixedMathInstance.address);
+    const SigmoidAmm = await ethers.getContractFactory("SigmoidAmm", {
+        libraries: {
+            FixedMath: FixedMathInstance.address,
+        },
+    });
 
-    await sampleContract.deployed();
-    console.log("Sample Contract address:", sampleContract.address);
+    const DAI = await ethers.getContractFactory("DAI");
 
-    saveFrontendFiles(sampleContract);
+    const DaiInstance = await DAI.deploy();
+    console.log("DAI deployed to", DaiInstance.address);
+    let SigmoidAmmInstance = await SigmoidAmm.deploy(DaiInstance.address);
+
+    console.log("SigmoidAmm deployed to", SigmoidAmmInstance.address);
+
+    // saveFrontendFiles(sampleContract);
 
 }
 
@@ -23,7 +35,7 @@ function saveFrontendFiles(contract) {
 
     fs.writeFileSync(
         contractsDir + "/contract-address.json",
-        JSON.stringify({ SampleContract: contract.address }, undefined, 2)
+        JSON.stringify({SampleContract: contract.address}, undefined, 2)
     );
 
     const SampleContractArtifact = artifacts.readArtifactSync("SampleContract");
